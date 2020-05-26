@@ -110,10 +110,9 @@ func (p *Proxy) serveConnect(w http.ResponseWriter, r *http.Request) {
 	log.Println(requestID, "connected to:", upstreamHostName)
 
 	od := &oneShotDialer{c: upstreamTLSConn}
-	rp := &httputil.ReverseProxy{
-		Director:      httpsDirector,
-		Transport:     &http.Transport{DialTLS: od.Dial},
-		FlushInterval: p.FlushInterval,
+	reverseProxy := &httputil.ReverseProxy{
+		Director:  httpsDirector,                     // 设置要外发的请求的类型和主机名
+		Transport: &http.Transport{DialTLS: od.Dial}, // 直接用已建立好的 TLS 连接与目标主机通信
 	}
 
 	onCloseChan := make(chan int)
@@ -121,7 +120,9 @@ func (p *Proxy) serveConnect(w http.ResponseWriter, r *http.Request) {
 		// 完成传输后触发结束事件
 		onCloseChan <- 0
 	}}
-	http.Serve(&oneShotListener{wc}, p.Wrap(rp))
+	// 设置一个临时服务器以监听来自下游连接的请求，并由反向代理执行。
+	// 在处理完一个请求后会退出此临时服务器。
+	http.Serve(&oneShotListener{wc}, reverseProxy)
 	<-onCloseChan
 }
 
@@ -159,6 +160,7 @@ func handshake(w http.ResponseWriter, config *tls.Config) (net.Conn, error) {
 	return downstreamTLSConn, nil
 }
 
+// httpsDirector 负责设置新请求的目标主机和协议
 func httpsDirector(r *http.Request) {
 	r.URL.Host = r.Host
 	r.URL.Scheme = "https"

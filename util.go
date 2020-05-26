@@ -1,7 +1,10 @@
 package mitm
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/base64"
+	"log"
 	"math/rand"
 	"time"
 )
@@ -16,4 +19,16 @@ func GenerateRequestID() string {
 		return ""
 	}
 	return base64.URLEncoding.EncodeToString(b)
+}
+
+// GetRootCA 从证书文件加载根证书，或者在运行时生成根证书
+func GetRootCA(certFilePath, keyFilePath string) (*tls.Certificate, error) {
+	cert, err := tls.LoadX509KeyPair(certFilePath, keyFilePath)
+	if err != nil {
+		log.Println()
+		return nil, err
+	}
+	// 只使用首个证书
+	cert.Leaf, err = x509.ParseCertificate(cert.Certificate[0])
+	return &cert, err
 }
