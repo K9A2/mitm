@@ -1,69 +1,97 @@
 package mitm
 
 import (
-	"crypto/ecdsa"
-	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"log"
 	"math/big"
+	"net"
 	"time"
 )
 
-const (
-	caMaxAge   = 5 * 365 * 24 * time.Hour
-	leafMaxAge = 24 * time.Hour
-	caUsage    = x509.KeyUsageDigitalSignature |
-		x509.KeyUsageContentCommitment |
-		x509.KeyUsageKeyEncipherment |
-		x509.KeyUsageDataEncipherment |
-		x509.KeyUsageKeyAgreement |
-		x509.KeyUsageCertSign |
-		x509.KeyUsageCRLSign
-	leafUsage = caUsage
+var (
+	leafExtUsage = []x509.ExtKeyUsage{
+		x509.ExtKeyUsageClientAuth,
+		x509.ExtKeyUsageServerAuth,
+	}
 )
 
-func genCert(ca *tls.Certificate, names []string) (*tls.Certificate, error) {
-	now := time.Now().Add(-1 * time.Hour).UTC()
-	if !ca.Leaf.IsCA {
-		return nil, errors.New("CA cert is not a CA")
+const (
+	caMaxAge     = 5 * 365 * 24 * time.Hour
+	leafMaxAge   = 24 * time.Hour
+	leafKeyUsage = x509.KeyUsageDigitalSignature | x509.KeyUsageDataEncipherment
+)
+
+// generateTLSCert 使用根证书为指定域名生成临时 TLS 证书
+func generateTLSCert(rootCA *tls.Certificate, names []string) (*tls.Certificate, error) {
+	log.Printf("generating temp certs for: %v\n", names)
+
+	if !rootCA.Leaf.IsCA {
+		log.Println("given rootCA is not a root CA")
+		return nil, errors.New("given rootCA is not a root CA")
 	}
+
 	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
 	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
 	if err != nil {
+		log.Printf("failed to generate serial number: %s\n", err)
 		return nil, fmt.Errorf("failed to generate serial number: %s", err)
 	}
-	tmpl := &x509.Certificate{
-		SerialNumber:          serialNumber,
-		Subject:               pkix.Name{CommonName: names[0]},
+
+	now := time.Now().UTC()
+	certTemplate := &x509.Certificate{
+		SerialNumber: serialNumber,
+		Subject: pkix.Name{
+			CommonName:         names[0],
+			Organization:       names,
+			OrganizationalUnit: names,
+			Country:            []string{"CN"},
+			Province:           []string{"GD"},
+			Locality:           []string{"GD"},
+		},
 		NotBefore:             now,
 		NotAfter:              now.Add(leafMaxAge),
-		KeyUsage:              leafUsage,
 		BasicConstraintsValid: true,
+		IsCA:                  false,
+		KeyUsage:              leafKeyUsage,
+		ExtKeyUsage:           leafExtUsage,
 		DNSNames:              names,
-		SignatureAlgorithm:    x509.ECDSAWithSHA512,
+		EmailAddresses:        names,
+		IPAddresses:           []net.IP{[]byte{127, 0, 0, 1}},
 	}
-	key, err := genKeyPair()
+
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
+		log.Println("error in generating temp private key")
 		return nil, err
 	}
-	x, err := x509.CreateCertificate(rand.Reader, tmpl, ca.Leaf, key.Public(), ca.PrivateKey)
+	tempCert, err := x509.CreateCertificate(rand.Reader, certTemplate, rootCA.Leaf, privateKey.Public(), rootCA.PrivateKey)
 	if err != nil {
+		log.Println("error in creating certificate")
 		return nil, err
 	}
-	cert := new(tls.Certificate)
-	cert.Certificate = append(cert.Certificate, x)
-	cert.PrivateKey = key
-	cert.Leaf, _ = x509.ParseCertificate(x)
-	return cert, nil
+
+	// 生成临时 TLS 证书
+	tempTLSCert := new(tls.Certificate)
+	tempTLSCert.Certificate = append(tempTLSCert.Certificate, tempCert)
+	tempTLSCert.PrivateKey = privateKey
+	tempTLSCert.Leaf, err = x509.ParseCertificate(tempCert)
+	if err != nil {
+		log.Println("error in creating temp tls certificate:", err.Error())
+		return nil, err
+	}
+
+	return tempTLSCert, nil
 }
 
-func genKeyPair() (*ecdsa.PrivateKey, error) {
-	return ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
+func generatePrivateKey() (*rsa.PrivateKey, error) {
+	return rsa.GenerateKey(rand.Reader, 2048)
 }
 
 func GenCA(name string) (certPEM, keyPEM []byte, err error) {
@@ -73,13 +101,13 @@ func GenCA(name string) (certPEM, keyPEM []byte, err error) {
 		Subject:               pkix.Name{CommonName: name},
 		NotBefore:             now,
 		NotAfter:              now.Add(caMaxAge),
-		KeyUsage:              caUsage,
+		ExtKeyUsage:           leafExtUsage,
+		KeyUsage:              leafKeyUsage,
 		BasicConstraintsValid: true,
-		IsCA:               true,
-		MaxPathLen:         2,
-		SignatureAlgorithm: x509.ECDSAWithSHA512,
+		IsCA:                  true,
+		MaxPathLen:            2,
 	}
-	key, err := genKeyPair()
+	key, err := generatePrivateKey()
 	if err != nil {
 		return
 	}
@@ -87,10 +115,7 @@ func GenCA(name string) (certPEM, keyPEM []byte, err error) {
 	if err != nil {
 		return
 	}
-	keyDER, err := x509.MarshalECPrivateKey(key)
-	if err != nil {
-		return
-	}
+	keyDER := x509.MarshalPKCS1PrivateKey(key)
 	certPEM = pem.EncodeToMemory(&pem.Block{
 		Type:  "CERTIFICATE",
 		Bytes: certDER,
