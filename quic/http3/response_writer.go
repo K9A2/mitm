@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/lucas-clemente/quic-go/internal/utils"
 	"github.com/marten-seemann/qpack"
+	"github.com/stormlin/mitm/quic/internal/utils"
 )
 
 type responseWriter struct {
