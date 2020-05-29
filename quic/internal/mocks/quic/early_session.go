@@ -10,9 +10,9 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
+	qtls "github.com/marten-seemann/qtls"
 	quic "github.com/stormlin/mitm/quic"
 	protocol "github.com/stormlin/mitm/quic/internal/protocol"
-	qtls "github.com/marten-seemann/qtls"
 )
 
 // MockEarlySession is a mock of EarlySession interface

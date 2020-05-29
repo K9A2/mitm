@@ -10,8 +10,8 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	protocol "github.com/stormlin/mitm/quic/internal/protocol"
 	qtls "github.com/marten-seemann/qtls"
+	protocol "github.com/stormlin/mitm/quic/internal/protocol"
 )
 
 // MockQuicSession is a mock of QuicSession interface

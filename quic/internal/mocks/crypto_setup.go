@@ -8,9 +8,9 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
+	qtls "github.com/marten-seemann/qtls"
 	handshake "github.com/stormlin/mitm/quic/internal/handshake"
 	protocol "github.com/stormlin/mitm/quic/internal/protocol"
-	qtls "github.com/marten-seemann/qtls"
 )
 
 // MockCryptoSetup is a mock of CryptoSetup interface

@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/stormlin/mitm/quic/internal/protocol"
-	"github.com/stormlin/mitm/quic/internal/utils"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/stormlin/mitm/quic/internal/protocol"
+	"github.com/stormlin/mitm/quic/internal/utils"
 )
 
 var _ = Describe("STREAMS_BLOCKED frame", func() {
