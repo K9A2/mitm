@@ -111,7 +111,7 @@ func Test(t *testing.T) {
 			upstream.ServeHTTP(w, r)
 		})
 	}, func(w http.ResponseWriter, r *http.Request) {
-		hops := r.Header.Get(xHops) + "c"
+		hops := r.Header.Get(xHops) + "conn"
 		w.Header().Set(xHops, hops)
 	}, func(resp *http.Response) {
 		const w = "abc"

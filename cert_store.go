@@ -15,7 +15,7 @@ type CertificateStore struct {
 	sync.Mutex
 
 	// 以上游的主机名为键存放用于替换的 TLS 证书
-	store map[string]*tls.Certificate
+	store  map[string]*tls.Certificate
 	status map[string]*tls.Certificate
 }
 

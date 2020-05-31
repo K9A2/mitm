@@ -1,0 +1,16 @@
+# 本地代理服务器设置
+client:
+  listenAddr: ":8080" # 监听地址
+  remoteProxyAddr: "localhost:9090"
+  certPath: "proxy-client.crt"
+  keyPath: "proxy-client.key"
+
+# 远程代理服务器设置
+server:
+  listenAddr: ":9090"
+  certPath: "proxy-server.crt"
+  keyPath: "proxy-server.key"
+
+# 作为测试客户端时的配置
+test:
+  target: "https://www.baidu.com"
