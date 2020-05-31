@@ -36,13 +36,6 @@ func (hr *hybridRoundTripper) RoundTrip(r *http.Request) (*http.Response, error)
   log.Printf("requestID = <%s>, method = <%s>, scheme = <%s>, host = <%s>, requestURI = <%s>, query = <%s>, outURL = <%s>",
     requestID, r.Method, hr.Scheme, hr.Host, r.URL.RequestURI(), r.URL.RawQuery, outURL)
 
-  //h3RoundTripper := &http3.RoundTripper{
-  //  TLSClientConfig: &tls.Config{
-  //    InsecureSkipVerify: true,
-  //  },
-  //}
-  //defer h3RoundTripper.Close()
-
   // 向远程代理服务器发送请求
   h3Client := &http.Client{
     //Transport: h3RoundTripper,
@@ -62,57 +55,4 @@ func (hr *hybridRoundTripper) RoundTrip(r *http.Request) (*http.Response, error)
   log.Printf("requestID = <%s>, go response: status = <%s>", requestID, resp.Status)
 
   return resp, nil
-
-  //copyHeader(w.Header(), resp.Header)
-  //w.Header().Del("alt-svc")
-  //// 向客户端返回数据
-  //w.WriteHeader(http.StatusOK)
-  //
-  //var reader io.ReadCloser
-  //switch resp.Header.Get("content-encoding") {
-  //case "gzip":
-  //  reader, err = gzip.NewReader(resp.Body)
-  //  if err != nil {
-  //    log.Printf("requestID = <%s>, error in creating gzip reader: %s", requestID, err.Error())
-  //    http.Error(w, "internal server error", http.StatusInternalServerError)
-  //    return
-  //  }
-  //default:
-  //  // 默认以未编码形式读出数据
-  //  reader = resp.Body
-  //}
-  //// reader 总是必须关闭的
-  //defer reader.Close()
-  //
-  //data, err := ioutil.ReadAll(reader)
-  //if err != nil {
-  //  log.Printf("requestID = <%s>, error in read all response body: %s", requestID, err.Error())
-  //  http.Error(w, "internal server error", http.StatusInternalServerError)
-  //  return
-  //}
-  //
-  //log.Println(string(data))
-  //
-  ////written, err := io.Copy(w, reader)
-  //written, err := gzip.NewWriter(w).Write(data)
-  //if err != nil {
-  //  log.Printf("requestID = <%s>, error in writting response body to client: %s",
-  //    requestID, err.Error())
-  //  http.Error(w, "internal server error", http.StatusInternalServerError)
-  //  return
-  //}
-  //
-  //log.Printf("requestID = <%s>, get response, written = <%d>, content-type = <%s>, content-encoding = <%s>",
-  //  requestID, written, w.Header().Get("content-type"), w.Header().Get("content-encoding"))
-  //return nil, nil
-}
-
-// outSendingHandler 负责实际向远程代理服务器发出请求
-type outSendingHandler struct {
-  RemoteProxyAddr string // 远程服务器的地址
-  Scheme          string // 所代理请求的协议类型
-  Host            string // 所代理请求的主机名和端口号
-}
-
-func (osh outSendingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }

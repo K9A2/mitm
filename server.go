@@ -21,13 +21,9 @@ func (h *welcomeMsgHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func ServerMain(config *Config) error {
   log.Printf("server listen at <%s>", config.Server.ListenAddr)
   handler := &remoteProxyHandler{}
-  //handler := &welcomeMsgHandler{}
   http.Handle("/proxy", handler)
   return http.ListenAndServeTLS(config.Server.ListenAddr, config.Server.CertPath,
    config.Server.KeyPath, nil)
-  //return http.ListenAndServe(":9090", nil)
-  //return http3.ListenAndServe(config.Server.ListenAddr,
-  //  config.Server.CertPath, config.Server.KeyPath, handler)
 }
 
 // remoteProxyHandler 负责将受到的请求转发到真正的目标服务器
@@ -56,14 +52,7 @@ func (rph remoteProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
   log.Printf("requestID = <%s>, encoded url = <%s>, decoded url = <%s>, accept-encoding = <%s>",
     requestID, encodedTarget, decodedTarget, outReq.Header.Get("accept-encoding"))
 
-  //roundTripper := &http3.RoundTripper{
-  //  TLSClientConfig: &tls.Config{
-  //    InsecureSkipVerify: true,
-  //  },
-  //}
-  h3Client := &http.Client{
-    //Transport: roundTripper,
-  }
+  h3Client := &http.Client{}
 
   resp, err := h3Client.Do(outReq)
   if err != nil {

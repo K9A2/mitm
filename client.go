@@ -40,8 +40,7 @@ type localProxyHandler struct {
 
 // httpsDirector 将给定的请求指向远程代理服务器
 func (lph localProxyHandler) httpsDirector(r *http.Request) {
-  //r.Host = lph.RemoteProxyAddr
-  //r.URL.Scheme = DefaultScheme
+  // 目前该功能留空
 }
 
 func (lph localProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -79,11 +78,6 @@ func (lph localProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     },
   }
 
-  //osh := outSendingHandler{
-  //  RemoteProxyAddr: lph.RemoteProxyAddr,
-  //  Scheme:          DefaultScheme,
-  //  Host:            r.Host,
-  //}
   onCloseChan := make(chan int)
   wc := &onCloseConn{downstreamTLSConn, func() {
     // 完成传输后触发结束事件
